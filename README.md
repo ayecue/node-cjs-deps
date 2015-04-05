@@ -29,7 +29,7 @@ node-cjs-deps --source tmp/klass.js --debugging
 
 Basic script usage: 
 ```
-require('revive-node-cjs-finder');
+require('node-cjs-deps');
 
 NodeCjsDeps.finderWithDebug({
     source: '/home/user/projectA/package.json',
@@ -40,7 +40,7 @@ NodeCjsDeps.finderWithDebug({
 
 Advanced script usage: 
 ```
-require('revive-node-cjs-finder');
+require('node-cjs-deps');
 
 var modules = NodeCjsDeps.finder('/home/ps681/workspace/klassmer/Klassmer.js');
 
