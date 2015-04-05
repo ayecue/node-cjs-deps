@@ -1,0 +1,20 @@
+#! /usr/bin/env node
+// -*- js -*-
+
+"use strict";
+
+var fs = require('fs'),
+	colors = require('colors'),
+	program = require('commander'),
+	Klass = require('node-klass');
+ 
+program
+	.option('-f, --source <path>', 'path to source file'.grey.bold)
+	.option('-d, --debugging', '(optional) display vm errors'.grey.italic)
+	.parse(process.argv);
+
+Klass.setSource(__filename).setScope(GLOBAL).require([
+	'NodeCjsDeps'
+],function(){
+	NodeCjsDeps.finderWithDebug(program);
+});
