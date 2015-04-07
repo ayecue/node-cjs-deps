@@ -1,6 +1,6 @@
 {
     "name": "node-cjs-deps",
-    "version": "0.2.0",
+    "version": "0.2.1",
     "description": "Search for all dependencies of an CommonJS project or file.",
     "main": "NodeCjsDeps.js",
     "homepage": "https://github.com/ayecue/node-cjs-deps",

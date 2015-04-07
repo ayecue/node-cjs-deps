@@ -10,6 +10,7 @@
 var Klass = require('node-klass'),
 	Collection = Klass.Collection,
 	extend = Klass.extend,
+	bind = Klass.bind,
 	CONSTANTS = require('./Constants'),
 	colors = require('colors'),
 	vm = require('vm'),
@@ -20,6 +21,7 @@ module.exports = Klass.define('NodeCjsDeps.Finder',{
 
 	requires: [
 		'NodeCjsDeps.Global',
+		'NodeCjsDeps.Package',
 		'NodeCjsDeps.Module',
 		'NodeCjsDeps.Stacktrace'
 	],
@@ -29,9 +31,15 @@ module.exports = Klass.define('NodeCjsDeps.Finder',{
 
 		me.extend({
 			debugging: debugging,
-			autoloader: new Autoloader(),
+			autoloader: new Autoloader({
+				onNewPackage: bind(me.onNewPackage,me)
+			}),
 			global: new NodeCjsDeps.Global(),
 			exports: {},
+			packages: new Collection({
+				constructor: NodeCjsDeps.Package,
+				searchProperty: 'cwd'
+			}),
 			stacktrace: new NodeCjsDeps.Stacktrace(),
 			modules: new Collection({
 				constructor: NodeCjsDeps.Module,
@@ -70,7 +78,11 @@ module.exports = Klass.define('NodeCjsDeps.Finder',{
 		if (CONSTANTS.PACKAGES.FILE_NAME === basename) {
 			pkg = Autoloader.read(src);
 			src = path.resolve(directory,pkg.main);
-			console.log(src);
+			
+			me.packages.push({
+				cwd: directory,
+				json: pkg
+			});
 		}
 
 		return src;
@@ -111,6 +123,13 @@ module.exports = Klass.define('NodeCjsDeps.Finder',{
 		});
 
 		return me.modules.getById(position);
+	},
+
+	onNewPackage: function(autoloader,pkg,nodeModule,json,moduleName,directory){
+		this.packages.push({
+			cwd: nodeModule,
+			json: json
+		});
 	},
 
 	onCreated: function(module,exports,filename,dirname){
