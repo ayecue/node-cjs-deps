@@ -11,10 +11,27 @@ var Klass = require('node-klass'),
 	path = require('path'),
 	fs = require('fs'),
 	extend = Klass.extend,
+	printf = Klass.printf,
 	Collection = Klass.Collection,
 	CONSTANTS = require('./Constants');
 
 Klass.define('NodeCjsDeps.Module',{
+
+	tpl: [
+		'(function(){',
+			'var $scope = $createModuleScope(this);',
+			'(function(require,module,exports,__filename,__dirname){',
+				'try {',
+					'<%= code %>',
+				'} catch(e) {',
+					'$onModuleError(e,module,exports,__filename,__dirname);',
+				'}',
+			'	$onModuleCreated(module,exports,__filename,__dirname);',
+			'})(function(file){',
+				'return $onRequire(file,$scope.module,$scope.exports,"<%= filename %>","<%= dirname %>");',
+			'},$scope.module,$scope.exports,"<%= filename %>","<%= dirname %>");',
+		'})();'
+	].join(''),
 
 	constructor: function(options){
 		var me = this,
@@ -30,7 +47,6 @@ Klass.define('NodeCjsDeps.Module',{
 			source: source,
 			directory: path.dirname(source),
 			orig: options.orig,
-			sandbox: options.sandbox,
 			content: fs.readFileSync(source,{
 				encoding : CONSTANTS.READ.ENCODING,
 				flag : CONSTANTS.READ.FLAG
@@ -48,14 +64,13 @@ Klass.define('NodeCjsDeps.Module',{
 		});
 	},
 
-	process: function(sandbox){
+	getCode: function(){
 		var me = this;
 
-		sandbox.__filename = me.source;
-		sandbox.__dirname = me.directory;
-	},
-
-	isLoaded: function(){
-		return this.loaded;
+		return printf(me.tpl,{
+			code: me.content,
+			filename: me.source,
+			dirname: me.directory
+		});
 	}
 });

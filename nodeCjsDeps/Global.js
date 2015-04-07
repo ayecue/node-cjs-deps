@@ -48,16 +48,9 @@ var Klass = require('node-klass'),
 	tty = require('tty'),
 	util = require('util'),
 	zlib = require('zlib'),
-	forEach = Klass.forEach,
-	Collection = Klass.Collection,
-	extend = Klass.extend;
+	Listener = Klass.Listener;
 
 module.exports = Klass.define('NodeCjsDeps.Global',{
-
-	requires: [
-		'NodeCjsDeps.Module',
-		'NodeCjsDeps.Stacktrace'
-	],
 
 	statics: {
 		nodejs: {
@@ -104,35 +97,46 @@ module.exports = Klass.define('NodeCjsDeps.Global',{
 		}
 	},
 
-	constructor: function(finder){
+	constructor: function(){
 		var me = this;
 
 		me.extend({
-			finder: finder,
-			modules: new Collection({
-				constructor: NodeCjsDeps.Module,
-				searchProperty: 'source'
-			}),
-			exports: {},
-			sandboxes: new NodeCjsDeps.Stacktrace(),
-			stacktrace: new NodeCjsDeps.Stacktrace()
+			sandbox: null,
+			listener: new Listener()
 		});
 	},
 
-	createSandbox: function(){
+	getSandbox: function(){
 		var me = this,
-			sandbox = {};
+			sandbox = me.sandbox;
 
-		vm.createContext(sandbox);
+		if (sandbox) {
+			return sandbox;
+		}
 
-		sandbox.require = function(file){
-			return me.onRequire(me.stacktrace.get(),file);
+		sandbox = vm.createContext({});
+
+		sandbox.$createModuleScope = function(){
+			return me.createModuleScope();
 		};
 
-		sandbox.exports = {};
-		sandbox.module = {
-			exports: {}
+		sandbox.$onModuleError = function(){
+			me.listener.fire('error',me,arguments);
 		};
+
+		sandbox.$onModuleCreated = function(){
+			me.listener.fire('created',me,arguments);
+		};
+
+		sandbox.$onRequire = function(file,module,exports,filename,dirname){
+			var context = {
+				exports: me.self.nodejs[file],
+				isNode: file in me.self.nodejs
+			};
+			me.listener.fire('require',me,[context,file,module,exports,filename,dirname]);
+			return context.exports;
+		};
+
 		sandbox.global = sandbox;
 		sandbox.GLOBAL = sandbox;
 		sandbox.process = process;
@@ -140,80 +144,15 @@ module.exports = Klass.define('NodeCjsDeps.Global',{
 		sandbox.Buffer = Buffer;
 		sandbox.console = new console.constructor(console._stdout,console._stderr);
 
-		me.sandboxes.push(sandbox);
-
-		return sandbox;
+		return me.sandbox = sandbox;
 	},
 
-	applySandbox: function(sandbox){
-		var me = this,
-			module = me.stacktrace.get(),
-			source = module.getSource();
-
-		me.exports[source] = sandbox.module.exports || {};
-		extend(me.exports[source],sandbox.exports);
-
-		forEach(sandbox,function(prop,value){
-			me.exports[prop] = value;
-		});
-	},
-
-	set: function(key,value){
-		this.exports[key] = value;
-		return this;
-	},
-
-	get: function(key){
-		return this.exports[key];
-	},
-
-	addModule: function(source,sandbox){
-		var me = this,
-			module = me.modules.get(source),
-			position;
-
-		if (module) {
-			return module;
-		}
-
-		position = me.modules.push({
-			source: path.resolve(source),
-			sandbox: sandbox
-		});
-
-		return me.modules.getById(position);
-	},
-
-	onRequire: function(module,file){
-		var me = this,
-			scope = me.exports,
-			source = module.getSource(),
-			dest = me.finder.autoloader.getSync(source,file),
-			deps, newModule, parents;
-
-		if (module) {
-			deps = module.getDeps();
-			deps.push({
-				source: dest,
-				orig: file
-			});
-		}
-
-		newModule = me.addModule(dest);
-		parents = newModule.getParents();
-		parents.push({
-			source: source
-		});
-
-		if (file in me.self.nodejs){
-			return me.self.nodejs[file];
-		}
-
-		if (!(dest in scope)) {
-			scope[dest] = {};
-			me.finder.iterate(dest);
-		}
-
-		return scope[dest];
+	createModuleScope: function(){
+		return {
+			exports: {},
+			module: {
+				exports: {}
+			}
+		};
 	}
 });

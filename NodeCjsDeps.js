@@ -49,12 +49,11 @@ module.exports = Klass.setSource(__filename).setScope(GLOBAL).define('NodeCjsDep
 	},
 
 	finder: function(source,debugging){
-		var finder = new NodeCjsDeps.Finder(debugging),
-			global;
+		var finder = new NodeCjsDeps.Finder(debugging);
 
 		source = path.resolve(source);
-		global = finder.iterate(source);
+		finder.iterate(source);
 
-		return global.getModules();
+		return finder.getModules();
 	}
 });
