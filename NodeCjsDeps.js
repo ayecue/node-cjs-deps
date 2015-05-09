@@ -54,8 +54,6 @@ module.exports = Klass.setSource(__filename).setScope(GLOBAL).define('NodeCjsDep
 		source = path.resolve(source);
 		finder.iterate(source);
 
-		debugger;
-
 		return finder.getModules();
 	}
 });
