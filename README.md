@@ -1,4 +1,4 @@
-# node-cjs-deps v0.2.2
+# node-cjs-deps v0.2.3
 [![Build Status](https://travis-ci.org/ayecue/node-cjs-deps.png?branch=master)](https://travis-ci.org/ayecue/node-cjs-deps)
 
 > Search for all dependencies of an CommonJS project or file.

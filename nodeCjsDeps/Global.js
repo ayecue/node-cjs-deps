@@ -9,11 +9,11 @@
 
 var Klass = require('node-klass'),
 	Listener = Klass.Listener,
-	vm = require('vm');
-
-var nativeModules = Object.keys(process.binding('natives'))
-	.filter(function (el) { return !/^internal/.test(el); })
-	.reduce(function(accumulator, cur) {
+	vm = require('vm'),
+	natives = process.binding('natives'),
+	nativeModules = Object.keys(natives).filter(function (el) {
+		return !/^internal/.test(el); 
+	}).reduce(function(accumulator, cur) {
 		accumulator[cur] = require(cur);
 		return accumulator;
 	}, {});
